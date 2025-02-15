@@ -215,13 +215,13 @@ async function readAccounts(filePath = 'accounts.json') {
 }
 
 
-function updateTableData(accounts, quiz_id = null, answer_id = null) {
+function updateTableData(sendKuis = true,accounts, quiz_id = null, answer_id = null) {
     return new Promise(async (resolve) => {
         let sendQuiz = true;
         const tableData = await Promise.all(accounts.map(async (account, index) => {
             let akun = await checkAccount(account.email);
             const cekin = await checkIn(akun?.data?.result[0]?.account);
-            if (sendQuiz) {
+            if (sendQuiz && sendKuis) {
                 const cekQuid = await getQuiz(akun?.data?.result[0]?.account);
                 sendQuiz = false;
                 const quizText = cekQuid.data.result.quiz_title;
@@ -298,7 +298,7 @@ async function main() {
         while (true) {
             twisters.put(processId, { text: "🔄 Checking in..." });
             const accounts = await readAccounts();
-            const updatedTable = await updateTableData(accounts);
+            const updatedTable = await updateTableData(true,accounts);
             const renderedTable = await renderTable(updatedTable);
 
             twisters.put(tableId, { text: renderedTable });
@@ -329,34 +329,28 @@ function createButton(choices) {
 };
 
 async function sendButtons(message = "Pilih jawaban Anda:", choices) {
-    await bot.telegram.sendMessage(TELEGRAM_ID, message, createButton(choices));
+    try {
+        await bot.telegram.sendMessage(TELEGRAM_ID, message, createButton(choices));
+    } catch (error) {
+        console.error("❌ Gagal mengirim pesan:", error);
+    }
 }
 
-const choices = [
-    { "text": "A) Small block size", "answer": "answer_143_487" },
-    { "text": "B) Medium block size", "answer": "answer_143_488" },
-    { "text": "C) Large block size", "answer": "answer_143_489" },
-    { "text": "D) Extra large block size", "answer": "answer_143_490" }
-];
 
-bot.start((ctx) => {
-    ctx.reply("Pilih jawaban Anda:", createButton(choices));
-});
 
 bot.on("callback_query", async (ctx) => {
     const answerId = ctx.callbackQuery.data;
-    const choice = choices.find(c => c.answer === answerId);
-
+    const choice = answerId;
     if (choice) {
-        const jawaban = choice.answer.split('_')
+        const jawaban = choice.split('_')
         const getAccount = await readAccounts();
-        const updatedTable = await updateTableData(getAccount, jawaban[1], jawaban[2])
+        const updatedTable = await updateTableData(false,getAccount, jawaban[1], jawaban[2])
         const renderedTable = await renderTable(updatedTable);
 
         twisters.put(`TableId`, { text: renderedTable, active: false });
 
         ctx.answerCbQuery();
-        ctx.reply(`Anda memilih: ${choice.text}`);
+        ctx.reply(`✅ Jawaban berhasil dikirim`);
     } else {
         ctx.answerCbQuery("Pilihan tidak valid!");
     }
