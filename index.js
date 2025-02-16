@@ -215,44 +215,59 @@ async function readAccounts(filePath = 'accounts.json') {
 }
 
 
-function updateTableData(sendKuis = true,accounts, quiz_id = null, answer_id = null) {
-    return new Promise(async (resolve) => {
-        let sendQuiz = true;
-        const tableData = await Promise.all(accounts.map(async (account, index) => {
-            let akun = await checkAccount(account.email);
-            const cekin = await checkIn(akun?.data?.result[0]?.account);
-            if (sendQuiz && sendKuis) {
-                const cekQuid = await getQuiz(akun?.data?.result[0]?.account);
-                sendQuiz = false;
-                const quizText = cekQuid.data.result.quiz_title;
-                let quizAn = [];
-                cekQuid.data.result.quiz_q.forEach((val, index) => {
-                    quizAn.push({ text: val.question, answer: `answer_${cekQuid.data.result.quiz_idx}_${val.q_idx}` })
-                });
-                await sendButtons(quizText, quizAn)
-            }
-            let quiz = null;
-            if (quiz_id !== null && answer_id !== null) {
-                quiz = await answerQuiz(akun?.data?.result[0]?.account, quiz_id, answer_id)
-                akun = await checkAccount(account.email);
-            }
-            const statusQuiz = quiz && quiz.data && quiz.data.result && quiz.data.result.msg
-                ? `✔️  ${quiz.data.result.msg}`
-                : `🔄 Menunggu jawaban kuis`;
-            return {
-                No: index + 1,
-                Email: cilukBa(account?.email ?? "N/A"),
-                Address: bakekok(akun?.data?.result[0]?.account) ?? "Unknown",
-                Tokenname: akun?.data?.result[0]?.balance_type ?? "-",
-                Balance: akun?.data?.result[0]?.amount ?? "-",
-                quiz: statusQuiz,
-                checkIn: cekin?.data?.status !== 'fail' ? "🟢 Checked in today" : `✔️  ${cekin?.data?.msg}`
-            };
-        }));
+async function updateTableData(sendKuis = true, accounts, quiz_id = null, answer_id = null) {
+    let success = false;
+    let tableData = [];
 
-        resolve(tableData);
-    });
+    while (!success) {
+        try {
+            let sendQuiz = true;
+            tableData = await Promise.all(accounts.map(async (account, index) => {
+                let akun = await checkAccount(account.email);
+                const cekin = await checkIn(akun?.data?.result[0]?.account);
+
+                if (sendQuiz && sendKuis) {
+                    const cekQuid = await getQuiz(akun?.data?.result[0]?.account);
+                    sendQuiz = false;
+                    const quizText = cekQuid.data.result.quiz_title;
+                    let quizAn = cekQuid.data.result.quiz_q.map((val) => ({
+                        text: val.question,
+                        answer: `answer_${cekQuid.data.result.quiz_idx}_${val.q_idx}`
+                    }));
+                    await sendButtons(quizText, quizAn);
+                }
+
+                let quiz = null;
+                if (quiz_id !== null && answer_id !== null) {
+                    quiz = await answerQuiz(akun?.data?.result[0]?.account, quiz_id, answer_id);
+                }
+                akun = await checkAccount(account.email);
+
+                const statusQuiz = quiz?.data?.result?.msg
+                    ? `✔️  ${quiz.data.result.msg}`
+                    : `🔄 Menunggu jawaban kuis`;
+
+                return {
+                    No: index + 1,
+                    Email: cilukBa(account?.email ?? "N/A"),
+                    Address: bakekok(akun?.data?.result[0]?.account) ?? "Unknown",
+                    Tokenname: akun?.data?.result[0]?.balance_type ?? "-",
+                    Balance: akun?.data?.result[0]?.amount ?? "-",
+                    quiz: statusQuiz,
+                    checkIn: cekin?.data?.status !== 'fail' ? "🟢 Checked in today" : `✔️  ${cekin?.data?.msg}`
+                };
+            }));
+
+            success = true;
+        } catch (err) {
+            console.error("Error terjadi, mengulang proses dalam 3 detik...", err);
+            await new Promise(resolve => setTimeout(resolve, 3000));
+        }
+    }
+
+    return tableData;
 }
+
 
 function renderTable(data) {
     return new Promise((resolve) => {
@@ -298,7 +313,7 @@ async function main() {
         while (true) {
             twisters.put(processId, { text: "🔄 Checking in..." });
             const accounts = await readAccounts();
-            const updatedTable = await updateTableData(true,accounts);
+            const updatedTable = await updateTableData(true, accounts);
             const renderedTable = await renderTable(updatedTable);
 
             twisters.put(tableId, { text: renderedTable });
@@ -344,7 +359,7 @@ bot.on("callback_query", async (ctx) => {
     if (choice) {
         const jawaban = choice.split('_')
         const getAccount = await readAccounts();
-        const updatedTable = await updateTableData(false,getAccount, jawaban[1], jawaban[2])
+        const updatedTable = await updateTableData(false, getAccount, jawaban[1], jawaban[2])
         const renderedTable = await renderTable(updatedTable);
 
         twisters.put(`TableId`, { text: renderedTable, active: false });
