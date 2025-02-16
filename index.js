@@ -224,6 +224,9 @@ async function updateTableData(sendKuis = true, accounts, quiz_id = null, answer
             let sendQuiz = true;
             tableData = await Promise.all(accounts.map(async (account, index) => {
                 let akun = await checkAccount(account.email);
+                if (!akun?.data?.result || !Array.isArray(akun.data.result) || akun.data.result.length === 0) {
+                    throw new Error("Akun tidak ditemukan, mengulang proses...");
+                }
                 const cekin = await checkIn(akun?.data?.result[0]?.account);
 
                 if (sendQuiz && sendKuis) {
@@ -242,7 +245,9 @@ async function updateTableData(sendKuis = true, accounts, quiz_id = null, answer
                     quiz = await answerQuiz(akun?.data?.result[0]?.account, quiz_id, answer_id);
                 }
                 akun = await checkAccount(account.email);
-
+                if (!akun?.data?.result || !Array.isArray(akun.data.result) || akun.data.result.length === 0) {
+                    throw new Error("Akun tidak ditemukan, mengulang proses...");
+                }
                 const statusQuiz = quiz?.data?.result?.msg
                     ? `✔️  ${quiz.data.result.msg}`
                     : `🔄 Menunggu jawaban kuis`;
@@ -260,7 +265,6 @@ async function updateTableData(sendKuis = true, accounts, quiz_id = null, answer
 
             success = true;
         } catch (err) {
-            console.error("Error terjadi, mengulang proses dalam 3 detik...", err);
             await new Promise(resolve => setTimeout(resolve, 3000));
         }
     }
