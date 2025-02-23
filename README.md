@@ -15,7 +15,7 @@ AriChain Daily Task automated daily check-in and answer quiz using Telegram Bot 
 - Don't Forget to Install GIT: ``apt install git``
 - Download script [Manually](https://github.com/im-hanzou/arichain-daily-task/archive/refs/heads/main.zip) or use git:
 ```bash
-git clone https://github.com/im-hanzou/arichain-daily-task
+git clone https://github.com/xinnxz/arichain-daily-task
 ```
 - Make sure you already in bot folder:
 ```bash
