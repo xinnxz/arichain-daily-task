@@ -3,7 +3,7 @@ AriChain Daily Task automated daily check-in and answer quiz using Telegram Bot 
 ## Tools and components required
 1. Ari Chain Account
    -  Download : [iOS](https://apps.apple.com/kr/app/ari-wallet/id6504207160) / [Android](https://play.google.com/store/apps/details?id=arichain.app.ari.wallet)
-   -  Register and insert referral code: ``678d5b168b5a1``
+   -  Register and insert referral code: ``679426c5227c2``
 2. VPS or RDP (OPTIONAL)
 3. Node.js [v20.18.3](https://nodejs.org/en/blog/release/v20.18.3) (LTS) or Latest
 4. Telegram [Chat ID](https://www.youtube.com/watch?v=b81_8ekbKpg&ab_channel=DhirajMediaAgency) and [BOT Token](https://www.youtube.com/watch?v=EOke01hZgZ0&ab_channel=UNgineering)
